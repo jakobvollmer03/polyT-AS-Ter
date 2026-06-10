@@ -1,0 +1,16 @@
+name: r
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - r-base
+  - r-tidyverse
+  - r-data.table
+  - r-ggplot2
+  - r-ggpubr
+  - bioconductor-genomicranges
+  - bioconductor-rtracklayer
+  - bioconductor-genomicfeatures
+  - r-truncnorm
+  - r-here
