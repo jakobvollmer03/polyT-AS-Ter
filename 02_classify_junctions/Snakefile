@@ -1,0 +1,51 @@
+configfile: "../config.yaml"
+
+RESULTS = config["results_dir"]
+PREFIX = config["experiment"]
+TOLERANCE = config["score_junctions"]["tolerance"]
+generate_AT = config["augment_transcriptome"]["generate_AT"]
+if generate_AT:
+    SAMPLE_GTF = f"{RESULTS}/00_generate_AT/compile_outputs/novel_transcripts.gtf"
+    REFERENCE_GTF = f"{RESULTS}/00_generate_AT/collapse_reference/collapsed_reference.gtf"
+else:
+    SAMPLE_GTF = config["get_junctions"]["sample_gtf"]
+    REFERENCE_GTF = config["get_junctions"]["reference_gtf"]
+    
+
+rule all_classify_junctions:
+    input: 
+        f"{RESULTS}/02_classify_junctions/{PREFIX}_novel_features_classified.txt",
+        f"{RESULTS}/02_classify_junctions/{PREFIX}_exon_mode_novel_features_classified.txt"
+        
+
+rule junction_mode_classifier:
+    input:
+        novel_features = f"{RESULTS}/01_get_junctions/{PREFIX}_novel_features.txt"
+    output:
+        f"{RESULTS}/02_classify_junctions/{PREFIX}_novel_features_classified.txt"
+    params:
+        #novel_features = f"{RESULTS}/01_get_junctions/{PREFIX}_novel_features.txt",
+        reference_gtf = REFERENCE_GTF,
+        tolerance = TOLERANCE
+    conda:
+        "../envs/r.yaml"
+    log:
+        "../logs/02_classify_junctions/classify_junctions.log"
+    script:
+        "scripts/splice_event_classifier_junction_mode.R"
+
+rule exon_mode_classifier:
+    input:
+        exon_contigs_up = f"{RESULTS}/01_get_junctions/{PREFIX}_exon_contigs_up.txt",
+        exon_contigs_down = f"{RESULTS}/01_get_junctions/{PREFIX}_exon_contigs_down.txt"
+    output:
+        f"{RESULTS}/02_classify_junctions/{PREFIX}_exon_mode_novel_features_classified.txt"
+    params:
+        reference_gtf = REFERENCE_GTF,
+        tolerance = TOLERANCE
+    conda:
+        "../envs/r.yaml"
+    log:
+        "../logs/02_classify_junctions/exon_mode_classifier.log"
+    script:
+        "scripts/splice_event_classifier_exon_mode.R"

@@ -1,0 +1,144 @@
+configfile: "config.yaml"
+
+import os
+import re
+
+RESULTS = config["isoseq_validation"]["isoseq_results_dir"]
+ISOSEQ_GTF = config["isoseq_validation"]["isoseq_gtf"]
+CONTROL_ISOSEQ_GTF = config["isoseq_validation"]["control_isoseq_gtf"]
+SPLICEAT_MODE = config["isoseq_validation"]["spliceat_mode"]
+SPLICEAT_OUTPUT_DIR = config["isoseq_validation"]["spliceat_output_dir"]
+ISOSEQ = config["isoseq_validation"]["isoseq_mode"]
+ORGANISM = config["isoseq_validation"]["organism"]
+ENSEMBL = config["isoseq_validation"]["ensembl"]
+
+if SPLICEAT_MODE:
+    # Check if granges file exists
+    granges_file = f"{SPLICEAT_OUTPUT_DIR}/consensus_granges_LSV.tsv"
+    gtf_consensus_file = f"{SPLICEAT_OUTPUT_DIR}/consensus_gtf_LSV.tsv"
+    has_granges = os.path.exists(granges_file)
+    has_gtf_consensus = os.path.exists(gtf_consensus_file)
+
+    # Build TOOLS list conditionally
+    SPLICEAT_TOOLS = ["Whippet", "LeafCutter", "Majiq"] #["Whippet", "Whippet + StringTie", "LeafCutter", "LeafCutter + StringTie", "Majiq", "Majiq + StringTie"]
+    if has_granges:
+        SPLICEAT_TOOLS.append("DS consensus")
+    if has_gtf_consensus:
+        SPLICEAT_TOOLS.append("SpliCeAT")
+    TOOLS = SPLICEAT_TOOLS
+    
+    # Build TOOL_OUTPUT dict conditionally
+    TOOL_OUTPUT = {
+        "Whippet": f"{SPLICEAT_OUTPUT_DIR}/whippet_lsvs_w_event_types.tsv",
+        #"Whippet + StringTie": f"{SPLICEAT_OUTPUT_DIR}/whippet_confirmed_events.tsv",
+        "LeafCutter": f"{SPLICEAT_OUTPUT_DIR}/leafcutter_lsvs_final.tsv",
+        #"LeafCutter + StringTie": f"{SPLICEAT_OUTPUT_DIR}/leafcutter_confirmed_events.tsv",
+        "Majiq": f"{SPLICEAT_OUTPUT_DIR}/majiq_lsvs_final.tsv",
+        #"Majiq + StringTie": f"{SPLICEAT_OUTPUT_DIR}/majiq_confirmed_events.tsv",
+        #"GTF_consensus": f"{SPLICEAT_OUTPUT_DIR}/consensus_gtf_LSV.tsv"
+    }
+    if has_granges:
+        TOOL_OUTPUT["DS consensus"] = granges_file
+    if has_gtf_consensus:
+        TOOL_OUTPUT["SpliCeAT"] = gtf_consensus_file
+else:
+    TOOLS = config["tools"]
+    TOOL_OUTPUT = config["tool_output"]
+
+if SPLICEAT_MODE:
+    SCRIPT = "scripts/score_splice_junctions_spliceat_mode.py"
+else:
+    SCRIPT = "scripts/score_splice_junctions.py"
+
+##remove spaces from tool names for snakemake wildcards
+TOOL_MAP = {tool.replace(" ", "_"): tool for tool in TOOLS}
+
+if SPLICEAT_MODE:
+    EXON_MODE_TOOLS = {"Whippet", "Whippet + StringTie"}
+else:
+    EXON_MODE_TOOLS = set(config["exon_mode_tools"])
+
+JUNCTION_TOOLS = [t for t in TOOLS if t not in EXON_MODE_TOOLS]
+JUNCTION_TOOLS_SMK = [tool.replace(" ", "_") for tool in JUNCTION_TOOLS]
+EXON_TOOLS     = [t for t in TOOLS if t in EXON_MODE_TOOLS]
+EXON_TOOLS_SMK = [tool.replace(" ", "_") for tool in EXON_TOOLS]
+
+
+
+
+
+rule all:
+    input:
+        f"{RESULTS}/Y_isoseq_validation/validation_visualization/validation_summary.txt"
+
+
+rule classify_junctions:
+    wildcard_constraints:
+        tool="|".join(re.escape(t) for t in JUNCTION_TOOLS_SMK) if JUNCTION_TOOLS else "NOMATCH"
+    params:
+        junction_file = lambda wildcards: TOOL_OUTPUT[TOOL_MAP[wildcards.tool]],
+        gtf_file = f"{SPLICEAT_OUTPUT_DIR}/../../r0_get_ref/{ORGANISM}/{ENSEMBL}_chr_filtered.gtf",
+        isoseq = ISOSEQ
+    output:
+        f"{RESULTS}/Y_isoseq_validation/tool_output_reclassified/{{tool}}_events_for_validation.tsv"
+    conda:
+        "../envs/r.yaml"
+    log:
+        f"../logs/Y_isoseq_validation/classify_junctions/{{tool}}.log"
+    script:
+        "scripts/splice_event_classifier_v3.R"
+
+
+rule classify_junctions_exon_mode:
+    wildcard_constraints:
+        tool = "|".join(re.escape(t) for t in EXON_TOOLS_SMK) if EXON_TOOLS_SMK else "NOMATCH"
+    params:
+        junction_file = lambda wildcards: TOOL_OUTPUT[TOOL_MAP[wildcards.tool]],
+        gtf_file = f"{SPLICEAT_OUTPUT_DIR}/../../r0_get_ref/{ORGANISM}/{ENSEMBL}_chr_filtered.gtf",
+        isoseq = ISOSEQ,
+        keep_unclassifiable_events = config["isoseq_validation"]["keep_unclassifiable_events"]
+    output:
+        f"{RESULTS}/Y_isoseq_validation/tool_output_reclassified/{{tool}}_events_for_validation.tsv"
+    conda:
+        "../envs/r.yaml"
+    log:
+        f"../logs/Y_isoseq_validation/classify_junctions/{{tool}}.log"
+    script:
+        "scripts/splice_event_classifier_v3_exon_mode.R"
+
+
+rule isoseq_validation:
+    input:
+        f"{RESULTS}/Y_isoseq_validation/tool_output_reclassified/{{tool}}_events_for_validation.tsv"
+    output:
+        f"{RESULTS}/Y_isoseq_validation/tool_output_validated/{{tool}}_validated.txt"
+    params:
+        isoseq_gtf = ISOSEQ_GTF,
+        control_isoseq_gtf = CONTROL_ISOSEQ_GTF,
+        tolerance = config["isoseq_validation"]["tolerance"],
+        keep_unclassifiable_events = config["isoseq_validation"]["keep_unclassifiable_events"],
+        output_dir = f"{RESULTS}/Y_isoseq_validation/tool_output_validated"
+    conda:
+        "../envs/r.yaml"
+    log:
+        f"../logs/Y_isoseq_validation/validation/isoseq_validation_{{tool}}.log"
+    script:
+        "scripts/isoseq_validation.R"
+
+
+rule visualization:
+    input:
+        expand(
+            f"{RESULTS}/Y_isoseq_validation/tool_output_validated/{{tool}}_validated.txt",
+            tool=TOOL_MAP.keys()
+        )
+    output:
+        f"{RESULTS}/Y_isoseq_validation/validation_visualization/validation_summary.txt"
+    params:
+        output_dir = f"{RESULTS}/Y_isoseq_validation/validation_visualization"
+    conda:
+        "../envs/r.yaml"
+    log:
+        f"../logs/Y_isoseq_validation/validation_visualization/visualization.log"
+    script:
+        "scripts/isoseq_validation_visualization.R"

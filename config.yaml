@@ -1,0 +1,91 @@
+name: config
+
+pipeline_dir: "/path/to/validation_pipeline" #path to Validation Pipeline directory
+
+results_dir: "/path/to/results_folder" # Specify where results should be stored.
+
+experiment: "spliceat_validation" # name of experiment, used for naming output files and directories
+
+
+# if spliceat_mode = false, adjust in score_junctions section
+tools: 
+  [] # all tools to compare
+exon_mode_tools: 
+  [] # tools that require exon based classification and validation (e. g. whippet)
+
+# Specify subdirectory in the simulate_experiment output section, in which read files will be stored.
+# !!! Change when running multiple experiments with the same augmented transcriptome !!!
+fastq_dir_name: "SPliCeAT_validation_dPSI_1" # e.g. name after dPSI of novel transcripts in test. 
+
+
+#=========================================================================================================
+# PART 1: Simulation of RNA sequencing experiment - generation of input for tools of interest
+#=========================================================================================================
+augment_transcriptome:
+  # always Required
+  generate_AT: true # whether to generate novel transcripts for the augmented transcriptome
+  reference_gtf:  "/mnt/gtklab01/dbsv771/SpliCeAT_res/polytester_full_dPSI_1/results_mult_isoforms/results/r0_get_ref/Homo_sapiens/Homo_sapiens_GRCh38_115_chr_filtered.gtf"
+  genome_fasta:   "/mnt/gtklab01/dbsv771/SpliCeAT_res/polytester_full_dPSI_1/results_mult_isoforms/results/r0_get_ref/Homo_sapiens/Homo_sapiens_GRCh38_115_chr_dna.fa"
+  seed: 54
+
+  # Sampling controls (optional - these are defaults)
+  max_total: 300
+  max_per_type: 30
+
+  # Event counts - omit a type to skip it entirely
+  # The simulation framework uses a different event type naming scheme internally. Corresponding event types
+  # in the publication are commented 
+  events:
+    alternative_donor_late: 30 # cADds
+    alternative_donor_early: 30 # cADus
+    alternative_acceptor_late: 30 # cADds
+    alternative_acceptor_early: 30 # cAAus
+    intron_retention: 30 # cIR
+    1_ES: 30 # cES1
+    #2_ES: 30 # cES2
+    
+    # combined types optional:
+    # The two listed below are the only combined event types currently available for generation
+    #alternative_donor_late_ES_1: 10 # cADdsES1
+    #alternative_acceptor_early_ES_1: 10 # cAAusES1
+
+simulate_experiment:
+  num_reps: 4           # Number of biological replicates per condition
+  reads_per_transcript: 500  # Base number of reads per transcript 
+  read_length: 100      # Read length (per mate for paired-end)
+  error_rate: 0.005     # Sequencing error rate
+  novel_fold_change_test: 0.625 # 0.1 # 0.2 # 0.3 # 0.5 # 0.75 # 1 --> together with the next entry, this determines dPSI
+  original_fold_change_test: 0.375 # 0.9 # 0.8 # 0.7 # 0.5 # 0.25 # 0.01
+  novel_fold_change_control: 0.375 # remains the same
+  original_fold_change_control: 0.625 # remains the same
+  fraction_expressed: 0.6 # fraction of regular genes expressed in the simulation (to avoid simulating reads for all transcripts, which is not realistic)
+  strand_specific: True # whether to simulate strand-specific reads
+  # og_tx_file is only used if generate_AT = false, otherwise will use the output from the augmented transcriptome step for simulation
+  og_tx_file: "/mnt/gtklab01/dbsv771/generate_AT/full_run_3/compile_outputs/original_transcript_ids.tsv"
+  genome_fasta: "/mnt/gtklab01/dbsv771/SpliCeAT_res/CTX_mm_1404/results/r0_get_ref/Mus_musculus/Mus_musculus_GRCm39_115_chr_dna.fa"
+  sample_ref_gtf: "/mnt/gtklab01/dbsv771/decoy_stuff/early_acc_IR/sample_ref.gtf"
+
+#========================================================================================================
+# PART 2: Scoring of predicted junctions - requires manual specification of output files/output directory 
+#========================================================================================================
+
+# If you are using your own generated transcriptome, indicate the respective files in this section
+get_junctions:
+  # sample_gtf, reference_gtf and genome_fasta will only be used if generate_AT = false
+  sample_gtf: "/mnt/gtklab01/dbsv771/decoy_stuff/early_acc_IR/sample.gtf" # path to novel transcripts containing non-canonical splice events  
+  reference_gtf: "/mnt/gtklab01/dbsv771/SpliCeAT_res/CTX_mm_1404/results/r0_get_ref/Mus_musculus/Mus_musculus_GRCm39_115_chr_filtered.gtf" # path to reference GTF file (used for defining fold changes in simulation)
+  genome_fasta: "/mnt/gtklab01/dbsv771/SpliCeAT_res/CTX_mm_1404/results/r0_get_ref/Mus_musculus/Mus_musculus_GRCm39_115_chr_dna.fa"
+
+score_junctions:
+  tolerance: 2 # distance in bp for matching predicted junctions to truth (used in score_splice_junctions.py and isoseq_validation.R) 
+  spliceat_mode: true # whether to use specialized scoring mode for spliceat output (whippet, leafcutter, majiq, granges_consensus, gtf_consensus) in score_splice_junctions.py
+  spliceat_output_dir: "/mnt/gtklab01/dbsv771/SpliCeAT_res/polytester_full_dPSI_1/results_mult_isoforms/results/dPSI_1/r2_augment_transcriptome__event_mode/masterlists" # directory containing spliceat output files (used for score_splice_junctions_spliceat_mode.py)
+  scoring_mode_strict: TRUE # if TRUE, partial matches will not be counted as true positives 
+
+tool_output: # will be used as input for score_junctions step if spliceat_mode = False
+  toolA: "/mnt/gtklab01/dbsv771/SpliCeAT_res/hs_sim_1703/results/r2_augment_transcriptome/masterlists/consensus_granges_LSV.tsv" # replace with actual path to tool A output
+  toolB: "/mnt/gtklab01/dbsv771/SpliCeAT_res/hs_sim_1703/results/r2_augment_transcriptome/masterlists/leafcutter_lsvs_final.tsv" # replace with actual path to tool B output
+  toolC: "/mnt/gtklab01/dbsv771/SpliCeAT_res/hs_sim_1703/results/r2_augment_transcriptome/masterlists/majiq_lsvs_final.tsv" # replace with actual path to tool C output
+
+
+## isoseq was moved to a seperate config file at Y_isoseq/config.yaml

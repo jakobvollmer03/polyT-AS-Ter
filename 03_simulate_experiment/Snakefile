@@ -1,0 +1,123 @@
+configfile: "../config.yaml"
+
+RESULTS = config["results_dir"]
+PREFIX = config["experiment"]
+PARAMS = config["simulate_experiment"]
+FASTQ_DIR = config ["fastq_dir_name"] 
+generate_AT = config["augment_transcriptome"]["generate_AT"]
+if generate_AT:
+    OG_TX = f"{RESULTS}/00_generate_AT/compile_outputs/original_transcript_ids.tsv"
+    NOVEL_TX = f"{RESULTS}/00_generate_AT/compile_outputs/novel_transcript_ids.tsv"
+    GENOME_FASTA = f"{RESULTS}/00_generate_AT/modify_fasta/modified_genome.fasta"
+    SAMPLE_GTF = f"{RESULTS}/00_generate_AT/compile_outputs/novel_transcripts.gtf"
+    SAMPLE_REF_GTF = f"{RESULTS}/00_generate_AT/compile_outputs/augmented_transcriptome.gtf"
+else:
+    OG_TX = config["simulate_experiment"]["og_tx_file"]
+    SAMPLE_GTF = config ["get_junctions"]["sample_gtf"]
+    GENOME_FASTA = config ["simulate_experiment"]["genome_fasta"]
+    SAMPLE_REF_GTF = config ["simulate_experiment"]["sample_ref_gtf"]
+
+
+# Number of replicates per condition (2 = 2 control + 2 test = 4 total samples)
+NUM_REPS = PARAMS.get("num_reps", 2)
+SAMPLES = [f"{i:02d}" for i in range(1, 2*NUM_REPS + 1)]
+
+rule all_simulate_experiment:
+    input:
+        expand(
+            f"{RESULTS}/03_simulate_experiment/{FASTQ_DIR}/alignments/{PREFIX}_sample_{{sample}}_Aligned.sortedByCoord.out.bam.bai",
+            sample=SAMPLES
+        )
+
+rule prepare_transcripts:
+    input:
+        gtf = SAMPLE_REF_GTF,
+        fasta = GENOME_FASTA
+    output:
+        f"{RESULTS}/03_simulate_experiment/{FASTQ_DIR}/{PREFIX}_sample.fasta"
+    #conda:
+     #   "../envs/"
+    log:
+        f"../logs/03_simulate_experiment/{FASTQ_DIR}/prepare_transcripts.log"    
+    shell:
+        "gffread {input.gtf} -g {input.fasta} -w {output} 2> {log}"
+
+rule simulate_experiment:
+    input:
+        gtf=SAMPLE_REF_GTF,
+        fasta=f"{RESULTS}/03_simulate_experiment/{FASTQ_DIR}/{PREFIX}_sample.fasta",
+        og=OG_TX,
+        novel=NOVEL_TX
+    output:
+        fasta_dir=directory(f"{RESULTS}/03_simulate_experiment/{FASTQ_DIR}/fasta"),
+        metadata=f"{RESULTS}/03_simulate_experiment/{FASTQ_DIR}/fasta/{PREFIX}_sample_metadata.csv",
+        groups=f"{RESULTS}/03_simulate_experiment/{FASTQ_DIR}/fasta/{PREFIX}_transcript_groups.csv"
+    params:
+        cfg=PARAMS,
+        prefix=PREFIX,
+        output_dir=f"{RESULTS}/03_simulate_experiment/{FASTQ_DIR}/fasta"
+    conda:
+        "../envs/r.yaml"
+    log:
+        f"../logs/03_simulate_experiment/{FASTQ_DIR}/{PREFIX}_polyester.log"
+    script:
+        "scripts/polyester_cryptic_simulation_v2.R"
+
+
+rule convert_fasta_to_fastq:
+    input:
+        fasta_dir=f"{RESULTS}/03_simulate_experiment/{FASTQ_DIR}/fasta"
+    output:
+        fastq1=f"{RESULTS}/03_simulate_experiment/{FASTQ_DIR}/fastq_converted/{PREFIX}_sample_{{sample}}_1.fastq.gz",
+        fastq2=f"{RESULTS}/03_simulate_experiment/{FASTQ_DIR}/fastq_converted/{PREFIX}_sample_{{sample}}_2.fastq.gz"
+    params:
+        prefix=PREFIX
+    conda:
+        "../envs/python.yaml"
+    log:
+        f"../logs/03_simulate_experiment/{FASTQ_DIR}/{PREFIX}_sample_{{sample}}_convert_fasta_to_fastq.log"
+    script:
+        "scripts/batch_fasta_to_fastq.py"
+
+rule STAR_index:
+    input:
+        fasta=GENOME_FASTA
+    output:
+        index_dir=directory(f"{RESULTS}/03_simulate_experiment/{FASTQ_DIR}/star_index")
+    params:
+        prefix=PREFIX
+    conda:
+        "../envs/star.yaml"
+    log:
+        f"../logs/03_simulate_experiment/{FASTQ_DIR}/{PREFIX}_STAR_index.log"
+    shell:
+        "STAR --runThreadN 16 --runMode genomeGenerate --genomeDir {output.index_dir} --genomeFastaFiles {input.fasta} --genomeSAindexNbases 12 > {log} 2>&1"
+
+rule STAR_align:
+    input:
+        fastq1=f"{RESULTS}/03_simulate_experiment/{FASTQ_DIR}/fastq_converted/{PREFIX}_sample_{{sample}}_1.fastq.gz",
+        fastq2=f"{RESULTS}/03_simulate_experiment/{FASTQ_DIR}/fastq_converted/{PREFIX}_sample_{{sample}}_2.fastq.gz",
+        #index=f"{RESULTS}/03_simulate_experiment/{FASTQ_DIR}/star_index"
+        index="/mnt/gtklab01/dbsv771/validation_pipeline_res/polytester_full/03_simulate_experiment/SPliCeAT_validation_dPSI_1/star_index"
+    output:
+        bam=f"{RESULTS}/03_simulate_experiment/{FASTQ_DIR}/alignments/{PREFIX}_sample_{{sample}}_Aligned.sortedByCoord.out.bam"
+    params:
+        prefix=PREFIX
+    conda:
+        "../envs/star.yaml"
+    log:
+        f"../logs/03_simulate_experiment/{FASTQ_DIR}/{PREFIX}_sample_{{sample}}_alignment.log"
+    shell:
+        f"STAR --runThreadN 16 --genomeDir {{input.index}} --readFilesIn {{input.fastq1}} {{input.fastq2}} --readFilesCommand zcat --outFileNamePrefix {RESULTS}/03_simulate_experiment/{FASTQ_DIR}/alignments/{PREFIX}_sample_{{wildcards.sample}}_ --outSAMtype BAM SortedByCoordinate > {{log}} 2>&1"
+
+rule samtools_index:
+    input:
+        bam=f"{RESULTS}/03_simulate_experiment/{FASTQ_DIR}/alignments/{PREFIX}_sample_{{sample}}_Aligned.sortedByCoord.out.bam"
+    output:
+        bai=f"{RESULTS}/03_simulate_experiment/{FASTQ_DIR}/alignments/{PREFIX}_sample_{{sample}}_Aligned.sortedByCoord.out.bam.bai"
+    conda:
+        "../envs/star.yaml"
+    log:
+        f"../logs/03_simulate_experiment/{FASTQ_DIR}/{PREFIX}_sample_{{sample}}_index.log"
+    shell:
+        "samtools index {input.bam} > {log} 2>&1"

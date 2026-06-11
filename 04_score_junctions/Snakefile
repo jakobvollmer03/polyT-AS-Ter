@@ -1,0 +1,108 @@
+configfile: "../config.yaml"
+
+RESULTS = config["results_dir"]
+PREFIX = config["experiment"]
+TOLERANCE = config["score_junctions"]["tolerance"]
+SPLICEAT_MODE = config["score_junctions"]["spliceat_mode"]
+SPLICEAT_OUTPUT_DIR = config["score_junctions"]["spliceat_output_dir"]
+FASTQ_DIR = config["fastq_dir_name"]
+SCORING_MODE_STRICT = config["score_junctions"]["scoring_mode_strict"]
+
+if SPLICEAT_MODE:
+    # Check if granges file exists
+    granges_file = f"{SPLICEAT_OUTPUT_DIR}/consensus_granges_LSV.tsv"
+    gtf_consensus_file = f"{SPLICEAT_OUTPUT_DIR}/consensus_gtf_LSV.tsv"
+    has_granges = os.path.exists(granges_file)
+    has_gtf_consensus = os.path.exists(gtf_consensus_file)
+
+    # Build TOOLS list conditionally
+    SPLICEAT_TOOLS = ["Whippet", "Whippet + StringTie", "LeafCutter", "LeafCutter + StringTie", "Majiq", "Majiq + StringTie"]
+    if has_granges:
+        SPLICEAT_TOOLS.append("DS consensus")
+    if has_gtf_consensus:
+        SPLICEAT_TOOLS.append("SpliCeAT")
+    TOOLS = SPLICEAT_TOOLS
+    
+    # Build TOOL_OUTPUT dict conditionally
+    TOOL_OUTPUT = {
+        "Whippet": f"{SPLICEAT_OUTPUT_DIR}/whippet_lsvs_final.tsv",
+        "Whippet + StringTie": f"{SPLICEAT_OUTPUT_DIR}/whippet_confirmed_events.tsv",
+        "LeafCutter": f"{SPLICEAT_OUTPUT_DIR}/leafcutter_lsvs_final.tsv",
+        "LeafCutter + StringTie": f"{SPLICEAT_OUTPUT_DIR}/leafcutter_confirmed_events.tsv",
+        "Majiq": f"{SPLICEAT_OUTPUT_DIR}/majiq_lsvs_final.tsv",
+        "Majiq + StringTie": f"{SPLICEAT_OUTPUT_DIR}/majiq_confirmed_events.tsv",
+        #"GTF_consensus": f"{SPLICEAT_OUTPUT_DIR}/consensus_gtf_LSV.tsv"
+    }
+    if has_granges:
+        TOOL_OUTPUT["DS consensus"] = granges_file
+    if has_gtf_consensus:
+        TOOL_OUTPUT["SpliCeAT"] = gtf_consensus_file
+else:
+    TOOLS = config["tools"]
+    TOOL_OUTPUT = config["tool_output"]
+
+if SPLICEAT_MODE:
+    EXON_MODE_TOOLS = {"Whippet", "Whippet + StringTie"}
+else:
+    EXON_MODE_TOOLS = set(config["exon_mode_tools"])
+
+JUNCTION_TOOLS = [t for t in TOOLS if t not in EXON_MODE_TOOLS]
+EXON_TOOLS     = [t for t in TOOLS if t in EXON_MODE_TOOLS]
+
+rule all_score_junctions:
+    input:
+        expand(f"{RESULTS}/04_score_junctions/{FASTQ_DIR}/tool_output_prepared/{{tool}}_output_prepared.tsv", tool=TOOLS),
+        f"{RESULTS}/04_score_junctions/{FASTQ_DIR}/scoring_results/{PREFIX}_summary.tsv",
+        f"{RESULTS}/04_score_junctions/{FASTQ_DIR}/scoring_results/{PREFIX}_plots.pdf"
+
+rule prepare_output:
+    params:
+            cfg=TOOL_OUTPUT
+    output:
+        expand(f"{RESULTS}/04_score_junctions/{FASTQ_DIR}/tool_output_prepared/{{tool}}_output_prepared.tsv", tool=TOOLS)
+    conda:
+        "../envs/r.yaml"
+    log:
+        f"../logs/04_score_junctions/{FASTQ_DIR}/prepare_output.log"
+    script:
+        "scripts/prepare_output.R"
+
+# If spliceat_mode is true, use specialized scoring script for spliceat output (whippet, leafcutter, majiq, granges_consensus, gtf_consensus)
+rule score_splice_junctions:
+    input:
+        ground_truth_junctions=f"{RESULTS}/02_classify_junctions/{PREFIX}_novel_features_classified.txt",
+        ground_truth_exons=f"{RESULTS}/02_classify_junctions/{PREFIX}_exon_mode_novel_features_classified.txt",
+        tool_outputs=expand(f"{RESULTS}/04_score_junctions/{FASTQ_DIR}/tool_output_prepared/{{tool}}_output_prepared.tsv", tool=TOOLS)
+    output:
+        f"{RESULTS}/04_score_junctions/{FASTQ_DIR}/scoring_results/{PREFIX}_summary.tsv",
+        f"{RESULTS}/04_score_junctions/{FASTQ_DIR}/scoring_results/{PREFIX}_junction_overview.tsv"
+    params:
+        tool_names=TOOLS,
+        tolerance=TOLERANCE,
+        prefix=PREFIX,
+        spliceat_mode=SPLICEAT_MODE,
+        spliceat_output_dir=SPLICEAT_OUTPUT_DIR,
+        exon_tools=EXON_TOOLS
+    conda:
+        "../envs/python.yaml"
+    log:
+        f"../logs/04_score_junctions/{FASTQ_DIR}/score_splice_junctions.log"
+    script:
+        "scripts/score_splice_junctions.py"
+
+rule visualization:
+    input:
+        summary          = f"{RESULTS}/04_score_junctions/{FASTQ_DIR}/scoring_results/{PREFIX}_summary.tsv",
+        junction_overview= f"{RESULTS}/04_score_junctions/{FASTQ_DIR}/scoring_results/{PREFIX}_junction_overview.tsv"
+    output:
+        plots=f"{RESULTS}/04_score_junctions/{FASTQ_DIR}/scoring_results/{PREFIX}_plots.pdf"
+    params:
+        prefix=PREFIX,
+        tool_names=TOOLS,
+        strict=SCORING_MODE_STRICT
+    conda:
+        "../envs/r.yaml"
+    log:
+        f"../logs/04_score_junctions/{FASTQ_DIR}/visualization.log"
+    script:
+        "scripts/visualize_scores.R"

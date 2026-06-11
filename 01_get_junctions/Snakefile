@@ -1,0 +1,86 @@
+configfile: "../config.yaml"
+
+RESULTS = config["results_dir"]
+PREFIX = config["experiment"]
+generate_AT = config["augment_transcriptome"]["generate_AT"]
+if generate_AT:
+    SAMPLE_GTF = f"{RESULTS}/00_generate_AT/compile_outputs/novel_transcripts.gtf"
+    REFERENCE_GTF = f"{RESULTS}/00_generate_AT/collapse_reference/collapsed_reference.gtf"
+    OG_ID_FILE = f"{RESULTS}/00_generate_AT/compile_outputs/original_transcript_ids.tsv"
+else:
+    SAMPLE_GTF = config["get_junctions"]["sample_gtf"]
+    REFERENCE_GTF = config["get_junctions"]["reference_gtf"]
+    OG_ID_FILE = config["get_junctions"]["og_id_file"]
+
+rule all_get_junctions:
+    input: 
+        f"{RESULTS}/01_get_junctions/{PREFIX}_novel_features.txt",
+        f"{RESULTS}/01_get_junctions/{PREFIX}_exon_contigs_up.txt",
+        f"{RESULTS}/01_get_junctions/{PREFIX}_exon_contigs_down.txt"
+
+rule get_junctions_1_novel:
+    input:
+        sample_gtf = SAMPLE_GTF,
+    output:
+        f"{RESULTS}/01_get_junctions/templates/{PREFIX}_sample_junctions.rds",
+        f"{RESULTS}/01_get_junctions/templates/{PREFIX}_sample_exons.rds",
+    conda:
+        "../envs/r.yaml"
+    log:
+        "../logs/01_get_junctions/extract_junctions_step1_novel.log"
+    script:
+        "scripts/extract_junctions_step1_novel.R"
+
+rule get_junctions_1_ref:
+    input:
+        reference_gtf = REFERENCE_GTF,
+        og_id_file = OG_ID_FILE
+    output:
+        f"{RESULTS}/01_get_junctions/templates/{PREFIX}_reference_junctions.rds",
+        f"{RESULTS}/01_get_junctions/templates/{PREFIX}_reference_introns.rds",
+        f"{RESULTS}/01_get_junctions/templates/{PREFIX}_reference_exons.rds"
+    conda:
+        "../envs/r.yaml"
+    log:
+        "../logs/01_get_junctions/extract_junctions_step1_ref.log"
+    script:
+        "scripts/extract_junctions_step1.R"
+
+rule get_junctions_2:
+    input:
+        sample_junctions = f"{RESULTS}/01_get_junctions/templates/{PREFIX}_sample_junctions.rds",
+        reference_junctions = f"{RESULTS}/01_get_junctions/templates/{PREFIX}_reference_junctions.rds",
+        reference_introns = f"{RESULTS}/01_get_junctions/templates/{PREFIX}_reference_introns.rds",
+        reference_exons = f"{RESULTS}/01_get_junctions/templates/{PREFIX}_reference_exons.rds"
+    output:
+        f"{RESULTS}/01_get_junctions/{PREFIX}_novel_features.txt",
+        f"{RESULTS}/01_get_junctions/{PREFIX}_junctions_only.txt",
+        f"{RESULTS}/01_get_junctions/{PREFIX}_retained_introns.txt"
+    params:
+        sample_gtf = SAMPLE_GTF,
+        prefix = PREFIX
+    conda:
+        "../envs/r.yaml"
+    log:
+        "../logs/01_get_junctions/extract_junctions_step2.log"
+    script:
+        "scripts/extract_junctions_step2.R"
+
+
+rule get_exon_contigs:
+    input:
+        sample_exons = f"{RESULTS}/01_get_junctions/templates/{PREFIX}_sample_exons.rds",
+        reference_exons = f"{RESULTS}/01_get_junctions/templates/{PREFIX}_reference_exons.rds",
+        og_id_file = OG_ID_FILE
+    output:
+        f"{RESULTS}/01_get_junctions/{PREFIX}_exon_contigs_up.txt",
+        f"{RESULTS}/01_get_junctions/{PREFIX}_exon_contigs_down.txt"
+    params:
+        prefix = PREFIX
+    conda:
+        "../envs/r.yaml"
+    log:
+        "../logs/01_get_junctions/extract_exon_contigs.log"
+    script:
+        "scripts/extract_exon_contigs.R"
+
