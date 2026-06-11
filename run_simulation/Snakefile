@@ -1,0 +1,14 @@
+configfile: "../config.yaml"
+include: "../00_generate_AT/Snakefile"
+include: "../01_get_junctions/Snakefile"
+include: "../02_classify_junctions/Snakefile"
+include: "../03_simulate_experiment/Snakefile"
+include: "../04_score_junctions/Snakefile"
+
+generate_AT = config["augment_transcriptome"]["generate_AT"]
+
+rule all:
+    input:
+        rules.all_generate_AT.input if generate_AT else [],
+        rules.all_classify_junctions.input,
+        rules.all_simulate_experiment.input

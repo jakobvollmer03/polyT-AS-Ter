@@ -58,7 +58,7 @@ simulate_experiment:
   original_fold_change_test: 0.375 # 0.9 # 0.8 # 0.7 # 0.5 # 0.25 # 0.01
   novel_fold_change_control: 0.375 # remains the same
   original_fold_change_control: 0.625 # remains the same
-  fraction_expressed: 0.6 # fraction of regular genes expressed in the simulation (to avoid simulating reads for all transcripts, which is not realistic)
+  fraction_expressed: 0.6 # fraction of regular genes expressed in the simulation (to avoid simulating reads for all transcripts, but retaining background.)
   strand_specific: True # whether to simulate strand-specific reads
   # og_tx_file is only used if generate_AT = false, otherwise will use the output from the augmented transcriptome step for simulation
   og_tx_file: "/mnt/gtklab01/dbsv771/generate_AT/full_run_3/compile_outputs/original_transcript_ids.tsv"

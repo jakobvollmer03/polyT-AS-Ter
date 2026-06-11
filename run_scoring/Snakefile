@@ -1,0 +1,12 @@
+configfile: "../config.yaml"
+include: "../00_generate_AT/Snakefile"
+include: "../01_get_junctions/Snakefile"
+include: "../02_classify_junctions/Snakefile"
+include: "../03_simulate_experiment/Snakefile"
+include: "../04_score_junctions/Snakefile"
+
+rule all:
+    input:
+        rules.all_get_junctions.input,
+        rules.all_classify_junctions.input,
+        rules.all_score_junctions.input
