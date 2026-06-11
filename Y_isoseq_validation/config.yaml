@@ -19,11 +19,12 @@ experiment: "spliceat_validation" # name of experiment, used for naming output f
 isoseq_validation:
   isoseq_results_dir: "/path/to/isoseq_results" # specify where output of the pipeline should be stored
   isoseq_mode: true
+  reference_gtf_file: "" # path to reference transcriptome gtf
   spliceat_mode: false
   spliceat_output_dir: # specify spliceat masterlist directory, from which polyT-AS-Ter will extract the tool output files automatically 
-  organism: "Mus_musculus" # "Homo_sapiens" #
-  ensembl: "Mus_musculus_GRCm39_115" #"Homo_sapiens_GRCh38_115" #
-  isoseq_gtf: "/mnt/gtklab01/linglab/tdp43/isoseq/results/run2_includesBothBatches/KO_merged.collapsed.gff"
-  control_isoseq_gtf: "/mnt/gtklab01/linglab/tdp43/isoseq/results/run2_includesBothBatches/CTR.collapsed.gff"
+  organism: "Mus_musculus" # "Homo_sapiens" # --> only used if spliceat_mode = TRUE to pull reference directly from spliceat
+  ensembl: "Mus_musculus_GRCm39_115" #"Homo_sapiens_GRCh38_115" # --> only used if spliceat_mode = TRUE to pull reference directly from spliceat
+  isoseq_gtf: ""
+  control_isoseq_gtf: ""
   keep_unclassifiable_events: FALSE
   tolerance: 2 # base pair tolerance to be applied when coordinate matching is performed

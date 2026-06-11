@@ -24,8 +24,8 @@ fastq_dir_name: "SPliCeAT_validation_dPSI_1" # e.g. name after dPSI of novel tra
 augment_transcriptome:
   # always Required
   generate_AT: true # whether to generate novel transcripts for the augmented transcriptome
-  reference_gtf:  "/mnt/gtklab01/dbsv771/SpliCeAT_res/polytester_full_dPSI_1/results_mult_isoforms/results/r0_get_ref/Homo_sapiens/Homo_sapiens_GRCh38_115_chr_filtered.gtf"
-  genome_fasta:   "/mnt/gtklab01/dbsv771/SpliCeAT_res/polytester_full_dPSI_1/results_mult_isoforms/results/r0_get_ref/Homo_sapiens/Homo_sapiens_GRCh38_115_chr_dna.fa"
+  reference_gtf:  "path/to/reference.gtf"
+  genome_fasta:   "path/to/genome.fasta"
   seed: 54
 
   # Sampling controls (optional - these are defaults)
@@ -55,15 +55,15 @@ simulate_experiment:
   read_length: 100      # Read length (per mate for paired-end)
   error_rate: 0.005     # Sequencing error rate
   novel_fold_change_test: 0.625 # 0.1 # 0.2 # 0.3 # 0.5 # 0.75 # 1 --> together with the next entry, this determines dPSI
-  original_fold_change_test: 0.375 # 0.9 # 0.8 # 0.7 # 0.5 # 0.25 # 0.01
+  original_fold_change_test: 0.375 # 0.9 # 0.8 # 0.7 # 0.5 # 0.25 # 0 --> together with the previous entry, this determines dPSI
   novel_fold_change_control: 0.375 # remains the same
   original_fold_change_control: 0.625 # remains the same
   fraction_expressed: 0.6 # fraction of regular genes expressed in the simulation (to avoid simulating reads for all transcripts, but retaining background.)
   strand_specific: True # whether to simulate strand-specific reads
   # og_tx_file is only used if generate_AT = false, otherwise will use the output from the augmented transcriptome step for simulation
-  og_tx_file: "/mnt/gtklab01/dbsv771/generate_AT/full_run_3/compile_outputs/original_transcript_ids.tsv"
-  genome_fasta: "/mnt/gtklab01/dbsv771/SpliCeAT_res/CTX_mm_1404/results/r0_get_ref/Mus_musculus/Mus_musculus_GRCm39_115_chr_dna.fa"
-  sample_ref_gtf: "/mnt/gtklab01/dbsv771/decoy_stuff/early_acc_IR/sample_ref.gtf"
+  og_tx_file: "/path/to/og_tx_file.tsv" # path to file containing original transcripts to be used for simulation, in format of output from augmented transcriptome step (with columns: transcript_id, gene_id, chrom, strand, start, end). Only necessary if generate_AT = false, otherwise the output from the augmented transcriptome step will be used for simulation.
+  genome_fasta: "/path/to/genome.fasta"
+  sample_ref_gtf: "/path/to/augmented.gtf"
 
 #========================================================================================================
 # PART 2: Scoring of predicted junctions - requires manual specification of output files/output directory 
@@ -72,20 +72,20 @@ simulate_experiment:
 # If you are using your own generated transcriptome, indicate the respective files in this section
 get_junctions:
   # sample_gtf, reference_gtf and genome_fasta will only be used if generate_AT = false
-  sample_gtf: "/mnt/gtklab01/dbsv771/decoy_stuff/early_acc_IR/sample.gtf" # path to novel transcripts containing non-canonical splice events  
-  reference_gtf: "/mnt/gtklab01/dbsv771/SpliCeAT_res/CTX_mm_1404/results/r0_get_ref/Mus_musculus/Mus_musculus_GRCm39_115_chr_filtered.gtf" # path to reference GTF file (used for defining fold changes in simulation)
-  genome_fasta: "/mnt/gtklab01/dbsv771/SpliCeAT_res/CTX_mm_1404/results/r0_get_ref/Mus_musculus/Mus_musculus_GRCm39_115_chr_dna.fa"
+  sample_gtf: "path/to/sample.gtf" # path to novel transcripts containing non-canonical splice events  
+  reference_gtf: "Mus_musculus/Mus_musculus_GRCm39_115_chr_filtered.gtf" # path to reference GTF file (used for defining fold changes in simulation)
+  genome_fasta: "Mus_musculus/Mus_musculus_GRCm39_115_chr_dna.fa"
 
 score_junctions:
   tolerance: 2 # distance in bp for matching predicted junctions to truth (used in score_splice_junctions.py and isoseq_validation.R) 
-  spliceat_mode: true # whether to use specialized scoring mode for spliceat output (whippet, leafcutter, majiq, granges_consensus, gtf_consensus) in score_splice_junctions.py
-  spliceat_output_dir: "/mnt/gtklab01/dbsv771/SpliCeAT_res/polytester_full_dPSI_1/results_mult_isoforms/results/dPSI_1/r2_augment_transcriptome__event_mode/masterlists" # directory containing spliceat output files (used for score_splice_junctions_spliceat_mode.py)
+  spliceat_mode: false # whether to use specialized scoring mode for spliceat output (whippet, leafcutter, majiq, granges_consensus, gtf_consensus) in score_splice_junctions.py
+  spliceat_output_dir: "" # directory containing spliceat output files (used for score_splice_junctions_spliceat_mode.py)
   scoring_mode_strict: TRUE # if TRUE, partial matches will not be counted as true positives 
 
 tool_output: # will be used as input for score_junctions step if spliceat_mode = False
-  toolA: "/mnt/gtklab01/dbsv771/SpliCeAT_res/hs_sim_1703/results/r2_augment_transcriptome/masterlists/consensus_granges_LSV.tsv" # replace with actual path to tool A output
-  toolB: "/mnt/gtklab01/dbsv771/SpliCeAT_res/hs_sim_1703/results/r2_augment_transcriptome/masterlists/leafcutter_lsvs_final.tsv" # replace with actual path to tool B output
-  toolC: "/mnt/gtklab01/dbsv771/SpliCeAT_res/hs_sim_1703/results/r2_augment_transcriptome/masterlists/majiq_lsvs_final.tsv" # replace with actual path to tool C output
+  toolA: "path/to/toolA_output.tsv" # replace with actual path to tool A output
+  toolB: "path/to/toolB_output.tsv" # replace with actual path to tool B output
+  toolC: "path/to/toolC_output.tsv" # replace with actual path to tool C output
 
 
 ## isoseq was moved to a seperate config file at Y_isoseq/config.yaml

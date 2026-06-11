@@ -9,10 +9,13 @@ CONTROL_ISOSEQ_GTF = config["isoseq_validation"]["control_isoseq_gtf"]
 SPLICEAT_MODE = config["isoseq_validation"]["spliceat_mode"]
 SPLICEAT_OUTPUT_DIR = config["isoseq_validation"]["spliceat_output_dir"]
 ISOSEQ = config["isoseq_validation"]["isoseq_mode"]
-ORGANISM = config["isoseq_validation"]["organism"]
-ENSEMBL = config["isoseq_validation"]["ensembl"]
+
 
 if SPLICEAT_MODE:
+    ORGANISM = config["isoseq_validation"]["organism"]
+    ENSEMBL = config["isoseq_validation"]["ensembl"]
+    GTF_FILE= f"{SPLICEAT_OUTPUT_DIR}/../../r0_get_ref/{ORGANISM}/{ENSEMBL}_chr_filtered.gtf"
+    
     # Check if granges file exists
     granges_file = f"{SPLICEAT_OUTPUT_DIR}/consensus_granges_LSV.tsv"
     gtf_consensus_file = f"{SPLICEAT_OUTPUT_DIR}/consensus_gtf_LSV.tsv"
@@ -44,6 +47,7 @@ if SPLICEAT_MODE:
 else:
     TOOLS = config["tools"]
     TOOL_OUTPUT = config["tool_output"]
+    GTF_FILE = config["isoseq_validation"]["reference_gtf_file"]
 
 if SPLICEAT_MODE:
     SCRIPT = "scripts/score_splice_junctions_spliceat_mode.py"
@@ -77,7 +81,7 @@ rule classify_junctions:
         tool="|".join(re.escape(t) for t in JUNCTION_TOOLS_SMK) if JUNCTION_TOOLS else "NOMATCH"
     params:
         junction_file = lambda wildcards: TOOL_OUTPUT[TOOL_MAP[wildcards.tool]],
-        gtf_file = f"{SPLICEAT_OUTPUT_DIR}/../../r0_get_ref/{ORGANISM}/{ENSEMBL}_chr_filtered.gtf",
+        gtf_file = GTF_FILE,
         isoseq = ISOSEQ
     output:
         f"{RESULTS}/Y_isoseq_validation/tool_output_reclassified/{{tool}}_events_for_validation.tsv"
@@ -94,7 +98,7 @@ rule classify_junctions_exon_mode:
         tool = "|".join(re.escape(t) for t in EXON_TOOLS_SMK) if EXON_TOOLS_SMK else "NOMATCH"
     params:
         junction_file = lambda wildcards: TOOL_OUTPUT[TOOL_MAP[wildcards.tool]],
-        gtf_file = f"{SPLICEAT_OUTPUT_DIR}/../../r0_get_ref/{ORGANISM}/{ENSEMBL}_chr_filtered.gtf",
+        gtf_file = GTF_FILE,
         isoseq = ISOSEQ,
         keep_unclassifiable_events = config["isoseq_validation"]["keep_unclassifiable_events"]
     output:

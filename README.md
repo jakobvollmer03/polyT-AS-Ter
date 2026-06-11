@@ -1,9 +1,12 @@
 # polyT-AS-Ter: Validation of splice detection tools with manually configured simulated data or long reads.
 
-Cryptic splicing describes the occurrence of unannotated, misspliced isoforms. It is associated with numerous neurodegenerative diseases 
+Cryptic splicing describes the occurrence of unannotated, misspliced isoforms. It is associated with numerous neurodegenerative diseases. There are numerous tools available for studying differential splicing, however they often don't recover unannotated events or don't distinguish them from annotated alternative splicing. Recently, the [SpliCeAT](https://github.com/GTK-lab/SpliCeAT) pipeline was developed to discover and quantify cryptic splicing on the event- and isoform-level.
+It includes consensus voting of the differential splicing detection tools [Whippet](https://github.com/timbitz/Whippet.jl), [LeafCutter](https://github.com/davidaknowles/leafcutter) and [MAJIQ](https://majiq.biociphers.org/).
+
+This pipeline, polyT-AS-Ter, was developed to benchmark SpliCeAT comprehensively, but it can be used for other tools as well.
 ## polyT-AS-Ter offers two validation tracks
 1)  generate a simulated RNAseq experiment from a ground truth gtf containing novel transcripts, run their tool of interest and validate its output against the ground truth or 
-2) validate their tool of interest's output against condition-specific gtfs generated with long reads
+2) validate their tool of interest's output against condition-specific gtfs generated with long reads.
 
 
 ### How to run the pipeline for both tracks
@@ -26,6 +29,7 @@ Cryptic splicing describes the occurrence of unannotated, misspliced isoforms. I
 04_score_junctions
 
 The Run_simulation Snakefile runs transcriptome generation and simulation, while the Run_scoring Snakefile runs the steps required for scoring.
+
 Alternatively, each step can be run individually with the Snakefile provided in the respective directory.
 
 2) Long Read Experiment
