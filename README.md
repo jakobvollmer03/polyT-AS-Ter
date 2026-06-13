@@ -11,6 +11,7 @@ This pipeline, polyT-AS-Ter, was developed to benchmark SpliCeAT comprehensively
 
 ### How to run the pipeline for both tracks
 1) Simulated Data Workflow
+
 00_generate_augmented_transcriptome
 
 |
@@ -82,3 +83,10 @@ to check the parameters of the run. Once ready to run, execute
 ```bash
 snakemake --use-conda --cores 16
 ```
+
+
+### Standalone Functions
+
+Besides the Snakemake workflow, a number of standalone scripts have been used for the benchmarking of SpliCeAT. These include:
+- two standalone scripts for bidirectional filtering to generate output of hypothetical truncated SpliCeAT pipelines skipping the consensus voting
+- the iCLIP target enrichment analysis workflow
