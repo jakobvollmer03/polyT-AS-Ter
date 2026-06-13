@@ -12,20 +12,35 @@ This pipeline, polyT-AS-Ter, was developed to benchmark SpliCeAT comprehensively
 ### How to run the pipeline for both tracks
 1) Simulated Data Workflow
 00_generate_augmented_transcriptome
+
 |
+
 |
+
 01_get_junctions
+
 |
+
 |
+
 02_classify_junctions
+
 |
+
 |
+
 03_simulate_experiment
+
 |
+
 |
+
 [run tool of interest on simulated data]
+
 |
+
 |
+
 04_score_junctions
 
 The Run_simulation Snakefile runs transcriptome generation and simulation, while the Run_scoring Snakefile runs the steps required for scoring.
@@ -38,7 +53,9 @@ Executed with a single Snakefile in the Y_isoseq_validation directory. Note that
 
 ### Requirements before starting
 -- MOST importantly: make sure that the tool you want to test produces output that can be converted into a 1-junction/1-contig-per row format (ideally .tsv) and provides a directional, quantitative measure of junction-/contig-usage between conditions (like ΔPSI)
+
 -- Reference transcriptome gtf
+
 -- reference genome fasta
 
 ### Parameters to adjust in the config files
