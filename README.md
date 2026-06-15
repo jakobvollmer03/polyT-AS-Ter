@@ -1,3 +1,4 @@
+![polyT-AS-Ter](images/polyT-AS-Ter-logo.png)
 # polyT-AS-Ter: Validation of splice detection tools with manually configured simulated data or long reads.
 
 Cryptic splicing describes the occurrence of unannotated, misspliced isoforms. It is associated with numerous neurodegenerative diseases. There are numerous tools available for studying differential splicing, however they often don't recover unannotated events or don't distinguish them from annotated alternative splicing. Recently, the [SpliCeAT](https://github.com/GTK-lab/SpliCeAT) pipeline was developed to discover and quantify cryptic splicing on the event- and isoform-level.
