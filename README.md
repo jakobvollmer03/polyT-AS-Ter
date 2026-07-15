@@ -2,7 +2,7 @@
 # polyT-AS-Ter: Validation of splice detection tools with manually configured simulated data or long reads.
 
 Cryptic splicing describes the occurrence of unannotated, misspliced isoforms. It is associated with numerous neurodegenerative diseases. There are numerous tools available for studying differential splicing, however they often don't recover unannotated events or don't distinguish them from annotated alternative splicing. Recently, the [SpliCeAT](https://github.com/GTK-lab/SpliCeAT) pipeline was developed to discover and quantify cryptic splicing on the event- and isoform-level.
-It includes consensus voting of the differential splicing detection tools [Whippet](https://github.com/timbitz/Whippet.jl), [LeafCutter](https://github.com/davidaknowles/leafcutter) and [MAJIQ](https://majiq.biociphers.org/).
+It includes consensus voting of the differential splicing detection tools [Whippet](https://github.com/timbitz/Whippet.jl), [LeafCutter](https://github.com/davidaknowles/leafcutter) and [MAJIQ](https://majiq.biociphers.org/) and .
 
 This pipeline, polyT-AS-Ter, was developed to benchmark SpliCeAT comprehensively, but it can be used for other tools as well.
 ## polyT-AS-Ter offers two validation tracks
@@ -86,8 +86,8 @@ snakemake --use-conda --cores 16
 ```
 
 
-### Standalone Functions
+### Standalone Scripts
 
 Besides the Snakemake workflow, a number of standalone scripts have been used for the benchmarking of SpliCeAT. These include:
-- two standalone scripts for bidirectional filtering to generate output of hypothetical truncated SpliCeAT pipelines skipping the consensus voting
+- two standalone scripts for bidirectional filtering with individual tools to generate output of hypothetical truncated SpliCeAT pipelines skipping the consensus voting
 - the iCLIP target enrichment analysis workflow

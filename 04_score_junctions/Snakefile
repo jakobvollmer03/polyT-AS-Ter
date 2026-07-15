@@ -18,11 +18,11 @@ if SPLICEAT_MODE:
     # Build TOOLS list conditionally
     SPLICEAT_TOOLS = [
         "Whippet", 
-        #"Whippet + StringTie", 
+        "Whippet + StringTie", 
         "LeafCutter", 
-        #"LeafCutter + StringTie", 
+        "LeafCutter + StringTie", 
         "Majiq", 
-        #"Majiq + StringTie"
+        "Majiq + StringTie"
         ]
     if has_granges:
         SPLICEAT_TOOLS.append("DS consensus")
@@ -33,11 +33,11 @@ if SPLICEAT_MODE:
     # Build TOOL_OUTPUT dict conditionally
     TOOL_OUTPUT = {
         "Whippet": f"{SPLICEAT_OUTPUT_DIR}/whippet_lsvs_final.tsv",
-        #"Whippet + StringTie": f"{SPLICEAT_OUTPUT_DIR}/whippet_confirmed_events.tsv",
+        "Whippet + StringTie": f"{SPLICEAT_OUTPUT_DIR}/whippet_confirmed_events.tsv",
         "LeafCutter": f"{SPLICEAT_OUTPUT_DIR}/leafcutter_lsvs_final.tsv",
-        #"LeafCutter + StringTie": f"{SPLICEAT_OUTPUT_DIR}/leafcutter_confirmed_events.tsv",
+        "LeafCutter + StringTie": f"{SPLICEAT_OUTPUT_DIR}/leafcutter_confirmed_events.tsv",
         "Majiq": f"{SPLICEAT_OUTPUT_DIR}/majiq_lsvs_final.tsv",
-        #"Majiq + StringTie": f"{SPLICEAT_OUTPUT_DIR}/majiq_confirmed_events.tsv",
+        "Majiq + StringTie": f"{SPLICEAT_OUTPUT_DIR}/majiq_confirmed_events.tsv",
         #"GTF_consensus": f"{SPLICEAT_OUTPUT_DIR}/consensus_gtf_LSV.tsv"
     }
     if has_granges:
@@ -49,7 +49,7 @@ else:
     TOOL_OUTPUT = config["tool_output"]
 
 if SPLICEAT_MODE:
-    EXON_MODE_TOOLS = {"Whippet"}  #, "Whippet + StringTie"
+    EXON_MODE_TOOLS = {"Whippet", "Whippet + StringTie"}  #, "Whippet + StringTie"
 else:
     EXON_MODE_TOOLS = set(config["exon_mode_tools"])
 

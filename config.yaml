@@ -1,10 +1,10 @@
 name: config
 
-pipeline_dir: "/path/to/validation_pipeline" #path to Validation Pipeline directory
+pipeline_dir: "/mnt/cbis/home/dbsv771/validation_pipeline" #path to Validation Pipeline directory
 
-results_dir: "/path/to/results_folder" # Specify where results should be stored.
+results_dir: "/mnt/gtklab01/dbsv771/validation_pipeline_res/polytester_full" # Specify where results should be stored.
 
-experiment: "spliceat_validation" # name of experiment, used for naming output files and directories
+experiment: "polytester_run_2" # name of experiment, used for naming output files and directories
 
 
 # if spliceat_mode = false, adjust in score_junctions section
@@ -78,9 +78,9 @@ get_junctions:
 
 score_junctions:
   tolerance: 2 # distance in bp for matching predicted junctions to truth (used in score_splice_junctions.py and isoseq_validation.R) 
-  spliceat_mode: false # whether to use specialized scoring mode for spliceat output (whippet, leafcutter, majiq, granges_consensus, gtf_consensus) in score_splice_junctions.py
-  spliceat_output_dir: "" # directory containing spliceat output files (used for score_splice_junctions_spliceat_mode.py)
-  scoring_mode_strict: TRUE # if TRUE, partial matches will not be counted as true positives 
+  spliceat_mode: true # whether to use specialized scoring mode for spliceat output (whippet, leafcutter, majiq, granges_consensus, gtf_consensus) in score_splice_junctions.py
+  spliceat_output_dir: "/mnt/gtklab01/dbsv771/SpliCeAT_res/polytester_full_dPSI_1/results_mult_isoforms/results/dPSI_1/r2_augment_transcriptome__event_mode/masterlists" # directory containing spliceat output files (used for score_splice_junctions_spliceat_mode.py)
+  scoring_mode_strict: true # if TRUE, partial matches will not be counted as true positives 
 
 tool_output: # will be used as input for score_junctions step if spliceat_mode = False
   toolA: "path/to/toolA_output.tsv" # replace with actual path to tool A output

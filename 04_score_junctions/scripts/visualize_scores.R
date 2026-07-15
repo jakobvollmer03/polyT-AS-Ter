@@ -229,7 +229,7 @@ if (strict) {
   select(tool, exact, partial, fp, n_truth) %>%
   mutate(
     recall    = (exact) / n_truth,
-    precision = (exact) / (exact + fp)
+    precision = (exact) / (exact + partial + fp)
   ) %>%
   select(tool, recall, precision)
 } else {
@@ -314,6 +314,11 @@ y_scale_tp <- scale_y_continuous(
   limits = c(0, 180),
   expand = expansion(mult = c(0, 0))
 )
+y_scale_tp_2 <- scale_y_continuous(
+  breaks = seq(0, 30, by = 5),
+  limits = c(0, 30),
+  expand = expansion(mult = c(0, 0))
+)
 
 # -- 2C-i: stacked bar, one bar per tool ------------------------------------
 p2c_stacked <- ggplot(tp_by_type, aes(x = tool, y = tp, fill = group)) +
@@ -339,7 +344,7 @@ p2c_grouped <- ggplot(tp_by_type, aes(x = group, y = tp, fill = tool)) +
   geom_col(position = position_dodge(width = 0.8), width = 0.75,
            color = "white", linewidth = 0.2) +
   scale_fill_manual(values = tool_colors, name = "Tool") +
-  y_scale_tp +
+  y_scale_tp_2 +
   labs(
     title = "True Positives per Event Type and Tool",
     x     = "Event type",
